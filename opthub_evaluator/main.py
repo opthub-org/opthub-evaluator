@@ -29,15 +29,15 @@ class AliasedGroup(click.Group):
     ...     pass
     """
 
-    def get_command(self, ctx, cmd_name):
-        rv = click.Group.get_command(self, ctx, cmd_name)
-        if rv is not None:
-            return rv
-        matches = [x for x in self.list_commands(ctx)
-                   if x.startswith(cmd_name)]
+    def get_command(self, ctx, cmd_name):  # pylint: disable=inconsistent-return-statements
+        cmd = click.Group.get_command(self, ctx, cmd_name)
+        if cmd is not None:
+            return cmd
+        matches = [cmd for cmd in self.list_commands(ctx)
+                   if cmd.startswith(cmd_name)]
         if not matches:
             return None
-        elif len(matches) == 1:
+        if len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
@@ -53,40 +53,40 @@ class StrLength(StringParamType):
     :param clamp: Clamp the input if exeeded
     """
 
-    def __init__(self, min=None, max=None, clamp=False):
+    def __init__(self, min=None, max=None, clamp=False):  # pylint: disable=redefined-builtin
         self.min = min
         self.max = max
         self.clamp = clamp
 
     def convert(self, value, param, ctx):
-        rv = StringParamType.convert(self, value, param, ctx)
-        l = len(rv)
+        ret = StringParamType.convert(self, value, param, ctx)
+        len_ret = len(ret)
         if self.clamp:
-            if self.min is not None and l < self.min:
-                return rv + ' ' * (self.min - l)
-            if self.max is not None and l > self.max:
-                return rv[:self.max]
-        if self.min is not None and l < self.min or \
-           self.max is not None and l > self.max:
+            if self.min is not None and len_ret < self.min:
+                return ret + ' ' * (self.min - len_ret)
+            if self.max is not None and len_ret > self.max:
+                return ret[:self.max]
+        if self.min is not None and len_ret < self.min or \
+           self.max is not None and len_ret > self.max:
             if self.min is None:
                 self.fail(
                     'Length %d is longer than the maximum valid length %d.'
-                    % (l, self.max), param, ctx)
+                    % (len_ret, self.max), param, ctx)
             elif self.max is None:
                 self.fail(
                     'Length %d is shorter than the minimum valid length %d.'
-                    % (l, self.min), param, ctx)
+                    % (len_ret, self.min), param, ctx)
             else:
                 self.fail(
                     'Length %d is not in the valid range of %d to %d.'
-                    % (l, self.min, self.max), param, ctx)
-        return rv
+                    % (len_ret, self.min, self.max), param, ctx)
+        return ret
 
     def __repr__(self):
         return 'StrLength(%d, %d)' % (self.min, self.max)
 
 
-def load_config(ctx, self, value):
+def load_config(ctx, self, value):  # pylint:disable=unused-argument
     """Load `ctx.default_map` from a file.
 
     :param ctx: Click context
@@ -97,8 +97,8 @@ def load_config(ctx, self, value):
 
     if not path.exists(value):
         return {}
-    with open(value) as f:
-        ctx.default_map = yaml.safe_load(f)
+    with open(value, encoding="utf-8") as file:
+        ctx.default_map = yaml.safe_load(file)
     return ctx.default_map
 
 
@@ -110,53 +110,64 @@ def save_config(ctx, value):
     :return dict: Saveed config
     """
 
-    with open(value, 'w') as f:
-        yaml.dump(ctx.default_map, f)
+    with open(value, 'w', encoding="utf-8") as file:
+        yaml.dump(ctx.default_map, file)
     return ctx.default_map
 
 
-def query(ctx, q, **kwargs):
+def query(ctx, gql_doc, **kwargs):
     """Submit a GraphQL query to a database.
 
     :param ctx: Click context
-    :param q: str: GraphQL query submitted to a database. q takes either of q_solution_to_evaluate, q_start_evaluation, q_check_budget, q_finish_evaluation, q_cancel_evaluation.
+    :param gql_doc: str: GraphQL query submitted to a database.
+    gql_doc takes either of Q_SOLUTION_TO_EVALUATE, Q_START_EVALUATION, Q_CHECK_BUDGET,
+    Q_FINISH_EVALUATION, Q_CANCEL_EVALUATION.
     :param kwargs: GraphQL variables
-    :return r: Results returned from a query (q). r depends on q. For example, when q=q_solution_to_evaluate, r is about a single solution that has not been evaluated by objective functions.
-    """    
-    _logger.debug('query(%s, %s)', q, kwargs)
+    :return response: Results returned from a query (gql_doc). response depends on gql_doc.
+    For example, when gql_doc=Q_SOLUTION_TO_EVALUATE, response is about a single solution that
+    has not been evaluated by objective functions.
+    """
+    _logger.debug('query(%s, %s)', gql_doc, kwargs)
     try:
-        r = ctx.obj['client'].execute(gql(q), variable_values=kwargs)
-    except Exception as e:
-        ctx.fail('Exception %s raised when executing query %s\n' % (e, q))
-    _logger.debug('-> %s', r)
-    return r
+        response = ctx.obj['client'].execute(gql(gql_doc), variable_values=kwargs)
+    except Exception as exc:
+        ctx.fail('Exception %s raised when executing query %s\n' % (exc, gql_doc))
+    _logger.debug('-> %s', response)
+    return response
 
 
 def wait_to_fetch(ctx, interval):
-    """Check if an unevaluated solution exists in a database by calling query every "interval" seconds.
+    """Check if an unevaluated solution exists in a database by calling query every "interval"
+    seconds.
 
     :param ctx: Click context
     :param interval: int: Interval to access a database (second)
     :return solution_id: ID of a solution that has not been evaluated.
-    """    
+    """
     while True:
-        r = query(ctx, q_solution_to_evaluate)  # Polling
-        if r['solutions']:
+        response = query(ctx, Q_SOLUTION_TO_EVALUATE)  # Polling
+        if response['solutions']:
             break  # solution found
         sleep(interval)
-    return r['solutions'][0]['id']
+    return response['solutions'][0]['id']
 
 
 def check_budget(ctx, user_id, match_id):
-    r = query(ctx, q_check_budget, user_id=user_id, match_id=match_id)
-    p = r['progress'][0]
-    n_eval = p['submitted'] - p['evaluation_error'] - p['scoring_error']
-    if n_eval > p['budget']:  # Budget exceeded.
-        raise Exception('Out of budget: %d / %d.' % (n_eval, p['budget']))
+    """Check if the budget is exceeded.
+
+    :param ctx: Click context.
+    :param user_id: User ID submitting solutions.
+    :param match_id: Match ID to submit solutions.
+    :raise Exception: When budget exceeded.
+    """
+    response = query(ctx, Q_CHECK_BUDGET, user_id=user_id, match_id=match_id)
+    progress = response['progress'][0]
+    n_eval = progress['submitted'] - progress['evaluation_error'] - progress['scoring_error']
+    if n_eval > progress['budget']:  # Budget exceeded.
+        raise Exception('Out of budget: %d / %d.' % (n_eval, progress['budget']))
 
 
-# Check if an unevaluated solution exists in a database.
-q_solution_to_evaluate = """
+Q_SOLUTION_TO_EVALUATE = """
 query solution_to_evaluate {
   solutions(
     limit: 1
@@ -168,8 +179,7 @@ query solution_to_evaluate {
 }
 """
 
-# Update evaluation_started_at of a solution to be evaluated by objective functions to the current time now().
-q_start_evaluation = """
+Q_START_EVALUATION = """
 mutation start_evaluation(
   $id: Int!
 ) {
@@ -200,8 +210,7 @@ mutation start_evaluation(
 }
 """
 
-# Get information about the number of function evaluations so far. budget is the pre-defined maximum number of function evaluations for a given problem instance. submitted is the total number of submissions of solutions. evaluation_error is the number of errors that occurred during the evaluation process. scoring_error is the number of errors that occurred during the scoring process.
-q_check_budget = """
+Q_CHECK_BUDGET = """
 query check_budget(
     $user_id: String!
     $match_id: Int!
@@ -225,8 +234,7 @@ query check_budget(
 }
 """
 
-# Update evaluation_finished_at to the current time now(). Objective values, constraint values, and information about errors are also updated.
-q_finish_evaluation = """
+Q_FINISH_EVALUATION = """
 mutation finish_evaluation(
     $id: Int!
     $objective: jsonb
@@ -249,8 +257,7 @@ mutation finish_evaluation(
 }
 """
 
-# Update evaluation_started_at and evaluation_finished_at to null when an error occurs in the evaluation process. A solution with evaluation_started_at=null and evaluation_finished=null means that it has not been evaluated by objective functions.
-q_cancel_evaluation = """
+Q_CANCEL_EVALUATION = """
 mutation cancel_evaluation(
   $id: Int!
 ) {
@@ -335,9 +342,9 @@ def run(ctx, **kwargs):
             solution_id = wait_to_fetch(ctx, kwargs['interval'])
             _logger.debug(solution_id)
             _logger.info('...Found')
-        except Exception as e:
-            if type(e) is InterruptedError:
-                _logger.info(e)
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                _logger.info(exc)
                 _logger.info('Attempt graceful shutdown...')
                 _logger.info('No need to rollback')
                 _logger.info('...Shutted down')
@@ -348,13 +355,13 @@ def run(ctx, **kwargs):
 
         try:
             _logger.info('Try to lock solution to evaluate...')
-            r = query(ctx, q_start_evaluation, id=solution_id)
-            if r['update_solutions']['affected_rows'] == 0:
+            response = query(ctx, Q_START_EVALUATION, id=solution_id)
+            if response['update_solutions']['affected_rows'] == 0:
                 _logger.info('...Already locked')
                 continue
-            elif r['update_solutions']['affected_rows'] != 1:
-                _logger.error('Lock error: affected_rows must be 0 or 1, but %s', r)
-            solution = r['update_solutions']["returning"][0]
+            if response['update_solutions']['affected_rows'] != 1:
+                _logger.error('Lock error: affected_rows must be 0 or 1, but %s', response)
+            solution = response['update_solutions']["returning"][0]
             _logger.info('...Lock aquired')
 
             _logger.info('Check budget...')
@@ -363,13 +370,13 @@ def run(ctx, **kwargs):
 
             _logger.info('Parse variable to evaluate...')
             _logger.debug(solution['variable'])
-            x = json.dumps(solution['variable']) + '\n'
-            _logger.debug(x)
+            variable = json.dumps(solution['variable']) + '\n'
+            _logger.debug(variable)
             _logger.info('...Parsed')
 
             _logger.info('Start container...')
             _logger.debug(solution['match']['problem']['image'])
-            c = client.containers.run(
+            container = client.containers.run(
                 image=solution['match']['problem']['image'],
                 command=kwargs['command'],
                 environment={v['key']: v['value']
@@ -377,25 +384,27 @@ def run(ctx, **kwargs):
                 stdin_open=True,
                 detach=True,
             )
-            _logger.info('...Started: %s', c.name)
- 
+            _logger.info('...Started: %s', container.name)
+
             _logger.info('Send variable...')
-            s = c.attach_socket(params={'stdin': 1, 'stream': 1, 'stdout': 1, 'stderr': 1})
-            s._sock.sendall(x.encode('utf-8'))
+            socket = container.attach_socket(
+                params={'stdin': 1, 'stream': 1, 'stdout': 1, 'stderr': 1}
+            )
+            socket._sock.sendall(variable.encode('utf-8'))  # pylint: disable=protected-access
             _logger.info('...Send')
 
             _logger.info('Wait for Evaluation...')
-            c.wait(timeout=kwargs['timeout'])
+            container.wait(timeout=kwargs['timeout'])
             _logger.info('...Evaluated')
 
             _logger.info('Recieve stdout...')
-            stdout = c.logs(stdout=True, stderr=False).decode('utf-8')
+            stdout = container.logs(stdout=True, stderr=False).decode('utf-8')
             _logger.debug(stdout)
             _logger.info('...Recived')
 
             if kwargs['rm']:
                 _logger.info('Remove container...')
-                c.remove()
+                container.remove()
                 _logger.info('...Removed')
 
             _logger.info('Parse stdout...')
@@ -408,30 +417,30 @@ def run(ctx, **kwargs):
             _logger.info('...OK')
 
             _logger.info('Push evaluation...')
-            query(ctx, q_finish_evaluation,
+            query(ctx, Q_FINISH_EVALUATION,
                 id=solution['id'],
                 objective=stdout.get('objective'),
                 constraint=stdout.get('constraint'),
                 info=stdout.get('info'),
                 error=stdout.get('error'))
             _logger.info('...Pushed')
-        except Exception as e:
-            if type(e) is InterruptedError:
-                _logger.info(e)
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                _logger.info(exc)
                 _logger.info('Attempt graceful shutdown...')
                 _logger.info('Rollback evaluation...')
-                query(ctx, q_cancel_evaluation, id=solution['id'])
+                query(ctx, Q_CANCEL_EVALUATION, id=solution['id'])
                 _logger.info('...Rolled back')
                 _logger.info('...Shutted down')
                 ctx.exit(0)
             _logger.error(format_exc())
             _logger.info('Finish evaluation...')
-            query(ctx, q_finish_evaluation,
+            query(ctx, Q_FINISH_EVALUATION,
                 id=solution['id'],
                 objective=None,
                 constraint=None,
                 info=None,
-                error=str(e))
+                error=str(exc))
             _logger.info('...Finished')
             continue
 
