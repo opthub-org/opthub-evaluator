@@ -13,6 +13,7 @@
 import logging
 import os
 import sys
+from datetime import date
 
 import opthub_evaluator
 
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 # -- Project information -----------------------------------------------------
 
 project = "Opthub Evaluator"
-copyright = "2020 Naoki Hamada"
+copyright = "{} SIG-RBP".format(date.today().year)
 author = "Naoki Hamada"
 
 # The full version, including alpha/beta/rc tags
@@ -98,12 +99,11 @@ def linkcode_resolve(domain, info):
         for part in info["fullname"].split("."):
             obj = getattr(obj, part)
         import inspect
-        import os
 
-        fn = inspect.getsourcefile(obj)
-        fn = os.path.relpath(fn, start=os.path.dirname(opthub_evaluator.__file__))
+        file = inspect.getsourcefile(obj)
+        file = os.path.relpath(file, start=os.path.dirname(opthub_evaluator.__file__))
         source, lineno = inspect.getsourcelines(obj)
-        return fn, lineno, lineno + len(source) - 1
+        return file, lineno, lineno + len(source) - 1
 
     if domain != "py" or not info["module"]:
         return None
