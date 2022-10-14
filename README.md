@@ -12,11 +12,6 @@ See also [requirements.txt](requirements.txt) for dependent python packages.
 $ pip install opthub-evaluator
 ```
 
-If you need a development snapshot, you can install it from the repository:
-```
-$ pip install git+https://gitlab.com/ec-competition/opthub-evaluator.git
-```
-
 ## Usage
 ### How to start an evaluator
 Login the docker registry where the problem image is stored.
