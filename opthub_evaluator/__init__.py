@@ -1,4 +1,3 @@
-# coding: utf-8
 """
     OptHub API
 
@@ -55,6 +54,6 @@
 
 from __future__ import absolute_import
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
 import opthub_evaluator.main
