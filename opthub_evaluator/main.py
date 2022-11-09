@@ -5,16 +5,15 @@ Definition of CLI commands.
 import json
 import logging
 from os import path
-from traceback import format_exc
 from time import sleep
+from traceback import format_exc
 
 import click
-from click.types import StringParamType
 import docker
-from gql import gql, Client
-from gql.transport.requests import RequestsHTTPTransport
 import yaml
-
+from click.types import StringParamType
+from gql import Client, gql
+from gql.transport.requests import RequestsHTTPTransport
 
 _logger = logging.getLogger(__name__)
 
@@ -29,17 +28,18 @@ class AliasedGroup(click.Group):
     ...     pass
     """
 
-    def get_command(self, ctx, cmd_name):
-        rv = click.Group.get_command(self, ctx, cmd_name)
-        if rv is not None:
-            return rv
-        matches = [x for x in self.list_commands(ctx)
-                   if x.startswith(cmd_name)]
+    def get_command(
+        self, ctx, cmd_name
+    ):  # pylint: disable=inconsistent-return-statements
+        cmd = click.Group.get_command(self, ctx, cmd_name)
+        if cmd is not None:
+            return cmd
+        matches = [cmd for cmd in self.list_commands(ctx) if cmd.startswith(cmd_name)]
         if not matches:
             return None
-        elif len(matches) == 1:
+        if len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
-        ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
+        ctx.fail("Too many matches: %s" % ", ".join(sorted(matches)))
 
 
 class StrLength(StringParamType):
@@ -53,40 +53,55 @@ class StrLength(StringParamType):
     :param clamp: Clamp the input if exeeded
     """
 
-    def __init__(self, min=None, max=None, clamp=False):
+    def __init__(
+        self, min=None, max=None, clamp=False
+    ):  # pylint: disable=redefined-builtin
         self.min = min
         self.max = max
         self.clamp = clamp
 
     def convert(self, value, param, ctx):
-        rv = StringParamType.convert(self, value, param, ctx)
-        l = len(rv)
+        ret = StringParamType.convert(self, value, param, ctx)
+        len_ret = len(ret)
         if self.clamp:
-            if self.min is not None and l < self.min:
-                return rv + ' ' * (self.min - l)
-            if self.max is not None and l > self.max:
-                return rv[:self.max]
-        if self.min is not None and l < self.min or \
-           self.max is not None and l > self.max:
+            if self.min is not None and len_ret < self.min:
+                return ret + " " * (self.min - len_ret)
+            if self.max is not None and len_ret > self.max:
+                return ret[: self.max]
+        if (
+            self.min is not None
+            and len_ret < self.min
+            or self.max is not None
+            and len_ret > self.max
+        ):
             if self.min is None:
                 self.fail(
-                    'Length %d is longer than the maximum valid length %d.'
-                    % (l, self.max), param, ctx)
+                    "Length %d is longer than the maximum valid length %d."
+                    % (len_ret, self.max),
+                    param,
+                    ctx,
+                )
             elif self.max is None:
                 self.fail(
-                    'Length %d is shorter than the minimum valid length %d.'
-                    % (l, self.min), param, ctx)
+                    "Length %d is shorter than the minimum valid length %d."
+                    % (len_ret, self.min),
+                    param,
+                    ctx,
+                )
             else:
                 self.fail(
-                    'Length %d is not in the valid range of %d to %d.'
-                    % (l, self.min, self.max), param, ctx)
-        return rv
+                    "Length %d is not in the valid range of %d to %d."
+                    % (len_ret, self.min, self.max),
+                    param,
+                    ctx,
+                )
+        return ret
 
     def __repr__(self):
-        return 'StrLength(%d, %d)' % (self.min, self.max)
+        return "StrLength(%d, %d)" % (self.min, self.max)
 
 
-def load_config(ctx, self, value):
+def load_config(ctx, self, value):  # pylint:disable=unused-argument
     """Load `ctx.default_map` from a file.
 
     :param ctx: Click context
@@ -97,8 +112,8 @@ def load_config(ctx, self, value):
 
     if not path.exists(value):
         return {}
-    with open(value) as f:
-        ctx.default_map = yaml.safe_load(f)
+    with open(value, encoding="utf-8") as file:
+        ctx.default_map = yaml.safe_load(file)
     return ctx.default_map
 
 
@@ -110,53 +125,66 @@ def save_config(ctx, value):
     :return dict: Saveed config
     """
 
-    with open(value, 'w') as f:
-        yaml.dump(ctx.default_map, f)
+    with open(value, "w", encoding="utf-8") as file:
+        yaml.dump(ctx.default_map, file)
     return ctx.default_map
 
 
-def query(ctx, q, **kwargs):
+def query(ctx, gql_doc, **kwargs):
     """Submit a GraphQL query to a database.
 
     :param ctx: Click context
-    :param q: str: GraphQL query submitted to a database. q takes either of q_solution_to_evaluate, q_start_evaluation, q_check_budget, q_finish_evaluation, q_cancel_evaluation.
+    :param gql_doc: str: GraphQL query submitted to a database.
+    gql_doc takes either of Q_SOLUTION_TO_EVALUATE, Q_START_EVALUATION, Q_CHECK_BUDGET,
+    Q_FINISH_EVALUATION, Q_CANCEL_EVALUATION.
     :param kwargs: GraphQL variables
-    :return r: Results returned from a query (q). r depends on q. For example, when q=q_solution_to_evaluate, r is about a single solution that has not been evaluated by objective functions.
-    """    
-    _logger.debug('query(%s, %s)', q, kwargs)
+    :return response: Results returned from a query (gql_doc). response depends on gql_doc.
+    For example, when gql_doc=Q_SOLUTION_TO_EVALUATE, response is about a single solution that
+    has not been evaluated by objective functions.
+    """
+    _logger.debug("query(%s, %s)", gql_doc, kwargs)
     try:
-        r = ctx.obj['client'].execute(gql(q), variable_values=kwargs)
-    except Exception as e:
-        ctx.fail('Exception %s raised when executing query %s\n' % (e, q))
-    _logger.debug('-> %s', r)
-    return r
+        response = ctx.obj["client"].execute(gql(gql_doc), variable_values=kwargs)
+    except Exception as exc:
+        ctx.fail("Exception %s raised when executing query %s\n" % (exc, gql_doc))
+    _logger.debug("-> %s", response)
+    return response
 
 
 def wait_to_fetch(ctx, interval):
-    """Check if an unevaluated solution exists in a database by calling query every "interval" seconds.
+    """Check if an unevaluated solution exists in a database by calling query every "interval"
+    seconds.
 
     :param ctx: Click context
     :param interval: int: Interval to access a database (second)
     :return solution_id: ID of a solution that has not been evaluated.
-    """    
+    """
     while True:
-        r = query(ctx, q_solution_to_evaluate)  # Polling
-        if r['solutions']:
+        response = query(ctx, Q_SOLUTION_TO_EVALUATE)  # Polling
+        if response["solutions"]:
             break  # solution found
         sleep(interval)
-    return r['solutions'][0]['id']
+    return response["solutions"][0]["id"]
 
 
 def check_budget(ctx, user_id, match_id):
-    r = query(ctx, q_check_budget, user_id=user_id, match_id=match_id)
-    p = r['progress'][0]
-    n_eval = p['submitted'] - p['evaluation_error'] - p['scoring_error']
-    if n_eval > p['budget']:  # Budget exceeded.
-        raise Exception('Out of budget: %d / %d.' % (n_eval, p['budget']))
+    """Check if the budget is exceeded.
+
+    :param ctx: Click context.
+    :param user_id: User ID submitting solutions.
+    :param match_id: Match ID to submit solutions.
+    :raise Exception: When budget exceeded.
+    """
+    response = query(ctx, Q_CHECK_BUDGET, user_id=user_id, match_id=match_id)
+    progress = response["progress"][0]
+    n_eval = (
+        progress["submitted"] - progress["evaluation_error"] - progress["scoring_error"]
+    )
+    if n_eval > progress["budget"]:  # Budget exceeded.
+        raise Exception("Out of budget: %d / %d." % (n_eval, progress["budget"]))
 
 
-# Check if an unevaluated solution exists in a database.
-q_solution_to_evaluate = """
+Q_SOLUTION_TO_EVALUATE = """
 query solution_to_evaluate {
   solutions(
     limit: 1
@@ -168,8 +196,7 @@ query solution_to_evaluate {
 }
 """
 
-# Update evaluation_started_at of a solution to be evaluated by objective functions to the current time now().
-q_start_evaluation = """
+Q_START_EVALUATION = """
 mutation start_evaluation(
   $id: Int!
 ) {
@@ -200,8 +227,7 @@ mutation start_evaluation(
 }
 """
 
-# Get information about the number of function evaluations so far. budget is the pre-defined maximum number of function evaluations for a given problem instance. submitted is the total number of submissions of solutions. evaluation_error is the number of errors that occurred during the evaluation process. scoring_error is the number of errors that occurred during the scoring process.
-q_check_budget = """
+Q_CHECK_BUDGET = """
 query check_budget(
     $user_id: String!
     $match_id: Int!
@@ -225,8 +251,7 @@ query check_budget(
 }
 """
 
-# Update evaluation_finished_at to the current time now(). Objective values, constraint values, and information about errors are also updated.
-q_finish_evaluation = """
+Q_FINISH_EVALUATION = """
 mutation finish_evaluation(
     $id: Int!
     $objective: jsonb
@@ -249,8 +274,7 @@ mutation finish_evaluation(
 }
 """
 
-# Update evaluation_started_at and evaluation_finished_at to null when an error occurs in the evaluation process. A solution with evaluation_started_at=null and evaluation_finished=null means that it has not been evaluated by objective functions.
-q_cancel_evaluation = """
+Q_CANCEL_EVALUATION = """
 mutation cancel_evaluation(
   $id: Int!
 ) {
@@ -270,33 +294,65 @@ mutation cancel_evaluation(
 """
 
 
-@click.command(help='OptHub Evaluator.')
-@click.option('-u', '--url', envvar='OPTHUB_URL', type=str,
-              default='https://opthub-api.herokuapp.com/v1/graphql',
-              help='URL to OptHub.')
-@click.option('-a', '--apikey', envvar='OPTHUB_APIKEY',
-              type=StrLength(max=64), help='ApiKey.')
-@click.option('-i', '--interval', envvar='OPTHUB_INTERVAL',
-              type=click.IntRange(min=1), default=2, help='Polling interval.')
-@click.option('--verify/--no-verify', envvar='OPTHUB_VERIFY',
-              default=True, help='Verify SSL certificate.')
-@click.option('-r', '--retries', envvar='OPTHUB_RETRIES',
-              type=click.IntRange(min=0), default=3,
-              help='Retries to establish HTTPS connection.')
-@click.option('-t', '--timeout', envvar='OPTHUB_TIMEOUT',
-              type=click.IntRange(min=0), default=600,
-              help='Timeout to process a query.')
-@click.option('--rm', envvar='OPTHUB_REMOVE',
-              is_flag=True,
-              help='Remove containers after exit.')
-@click.option('-q', '--quiet', count=True, help='Be quieter.')
-@click.option('-v', '--verbose', count=True, help='Be more verbose.')
-@click.option('-c', '--config', envvar='OPTHUB_EVALUATOR_CONFIG',
-              type=click.Path(dir_okay=False), default='opthub-evaluator.yml',
-              is_eager=True, callback=load_config, help='Configuration file.')
+@click.command(help="OptHub Evaluator.")
+@click.option(
+    "-u",
+    "--url",
+    envvar="OPTHUB_URL",
+    type=str,
+    default="https://opthub-api.herokuapp.com/v1/graphql",
+    help="URL to OptHub.",
+)
+@click.option(
+    "-a", "--apikey", envvar="OPTHUB_APIKEY", type=StrLength(max=64), help="ApiKey."
+)
+@click.option(
+    "-i",
+    "--interval",
+    envvar="OPTHUB_INTERVAL",
+    type=click.IntRange(min=1),
+    default=2,
+    help="Polling interval.",
+)
+@click.option(
+    "--verify/--no-verify",
+    envvar="OPTHUB_VERIFY",
+    default=True,
+    help="Verify SSL certificate.",
+)
+@click.option(
+    "-r",
+    "--retries",
+    envvar="OPTHUB_RETRIES",
+    type=click.IntRange(min=0),
+    default=3,
+    help="Retries to establish HTTPS connection.",
+)
+@click.option(
+    "-t",
+    "--timeout",
+    envvar="OPTHUB_TIMEOUT",
+    type=click.IntRange(min=0),
+    default=600,
+    help="Timeout to process a query.",
+)
+@click.option(
+    "--rm", envvar="OPTHUB_REMOVE", is_flag=True, help="Remove containers after exit."
+)
+@click.option("-q", "--quiet", count=True, help="Be quieter.")
+@click.option("-v", "--verbose", count=True, help="Be more verbose.")
+@click.option(
+    "-c",
+    "--config",
+    envvar="OPTHUB_EVALUATOR_CONFIG",
+    type=click.Path(dir_okay=False),
+    default="opthub-evaluator.yml",
+    is_eager=True,
+    callback=load_config,
+    help="Configuration file.",
+)
 @click.version_option()
-@click.argument('command', envvar='OPTHUB_COMMAND',
-              type=str, nargs=-1)
+@click.argument("command", envvar="OPTHUB_COMMAND", type=str, nargs=-1)
 @click.pass_context
 def run(ctx, **kwargs):
     """The entrypoint of CLI.
@@ -305,135 +361,154 @@ def run(ctx, **kwargs):
     :param kwargs: GraphQL variables
     """
 
-    verbosity = 10 * (kwargs['quiet'] - kwargs['verbose'])
+    verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
     log_level = logging.WARNING + verbosity
     logging.basicConfig(level=log_level)
-    _logger.info('Log level is set to %d', log_level)
-    _logger.debug('run(%s)', kwargs)
+    _logger.info("Log level is set to %d", log_level)
+    _logger.debug("run(%s)", kwargs)
     transport = RequestsHTTPTransport(
-        url=kwargs['url'],
-        verify=kwargs['verify'],
-        retries=kwargs['retries'],
-        headers={'X-Hasura-Admin-Secret': kwargs['apikey']},
+        url=kwargs["url"],
+        verify=kwargs["verify"],
+        retries=kwargs["retries"],
+        headers={"X-Hasura-Admin-Secret": kwargs["apikey"]},
     )
     ctx.obj = {
-        'client': Client(
+        "client": Client(
             transport=transport,
             fetch_schema_from_transport=True,
         )
     }
 
-    _logger.info('Connect to docker daemon...')
+    _logger.info("Connect to docker daemon...")
     client = docker.from_env()
-    _logger.info('...Connected')
+    _logger.info("...Connected")
 
     n_solution = 1
-    _logger.info('==================== Solution: %d ====================', n_solution)
+    _logger.info("==================== Solution: %d ====================", n_solution)
     while True:
         try:
-            _logger.info('Find solution to evaluate...')
-            solution_id = wait_to_fetch(ctx, kwargs['interval'])
+            _logger.info("Find solution to evaluate...")
+            solution_id = wait_to_fetch(ctx, kwargs["interval"])
             _logger.debug(solution_id)
-            _logger.info('...Found')
-        except Exception as e:
-            if type(e) is InterruptedError:
-                _logger.info(e)
-                _logger.info('Attempt graceful shutdown...')
-                _logger.info('No need to rollback')
-                _logger.info('...Shutted down')
+            _logger.info("...Found")
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                _logger.info(exc)
+                _logger.info("Attempt graceful shutdown...")
+                _logger.info("No need to rollback")
+                _logger.info("...Shutted down")
                 ctx.exit(0)
             else:
                 _logger.error(format_exc())
                 continue
 
         try:
-            _logger.info('Try to lock solution to evaluate...')
-            r = query(ctx, q_start_evaluation, id=solution_id)
-            if r['update_solutions']['affected_rows'] == 0:
-                _logger.info('...Already locked')
+            _logger.info("Try to lock solution to evaluate...")
+            response = query(ctx, Q_START_EVALUATION, id=solution_id)
+            if response["update_solutions"]["affected_rows"] == 0:
+                _logger.info("...Already locked")
                 continue
-            elif r['update_solutions']['affected_rows'] != 1:
-                _logger.error('Lock error: affected_rows must be 0 or 1, but %s', r)
-            solution = r['update_solutions']["returning"][0]
-            _logger.info('...Lock aquired')
+            if response["update_solutions"]["affected_rows"] != 1:
+                _logger.error(
+                    "Lock error: affected_rows must be 0 or 1, but %s", response
+                )
+            solution = response["update_solutions"]["returning"][0]
+            _logger.info("...Lock aquired")
 
-            _logger.info('Check budget...')
-            check_budget(ctx, user_id=solution['owner_id'], match_id=solution['match_id'])
-            _logger.info('...OK')
+            _logger.info("Check budget...")
+            check_budget(
+                ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
+            )
+            _logger.info("...OK")
 
-            _logger.info('Parse variable to evaluate...')
-            _logger.debug(solution['variable'])
-            x = json.dumps(solution['variable']) + '\n'
-            _logger.debug(x)
-            _logger.info('...Parsed')
+            _logger.info("Parse variable to evaluate...")
+            _logger.debug(solution["variable"])
+            variable = json.dumps(solution["variable"]) + "\n"
+            _logger.debug(variable)
+            _logger.info("...Parsed")
 
-            _logger.info('Start container...')
-            _logger.debug(solution['match']['problem']['image'])
-            c = client.containers.run(
-                image=solution['match']['problem']['image'],
-                command=kwargs['command'],
-                environment={v['key']: v['value']
-                    for v in solution['match']['environments']},
+            _logger.info("Start container...")
+            _logger.debug(solution["match"]["problem"]["image"])
+            container = client.containers.run(
+                image=solution["match"]["problem"]["image"],
+                command=kwargs["command"],
+                environment={
+                    v["key"]: v["value"] for v in solution["match"]["environments"]
+                },
                 stdin_open=True,
                 detach=True,
             )
-            _logger.info('...Started: %s', c.name)
- 
-            _logger.info('Send variable...')
-            s = c.attach_socket(params={'stdin': 1, 'stream': 1, 'stdout': 1, 'stderr': 1})
-            s._sock.sendall(x.encode('utf-8'))
-            _logger.info('...Send')
+            _logger.info("...Started: %s", container.name)
 
-            _logger.info('Wait for Evaluation...')
-            c.wait(timeout=kwargs['timeout'])
-            _logger.info('...Evaluated')
+            _logger.info("Send variable...")
+            socket = container.attach_socket(
+                params={"stdin": 1, "stream": 1, "stdout": 1, "stderr": 1}
+            )
+            socket._sock.sendall(
+                variable.encode("utf-8")
+            )  # pylint: disable=protected-access
+            _logger.info("...Send")
 
-            _logger.info('Recieve stdout...')
-            stdout = c.logs(stdout=True, stderr=False).decode('utf-8')
+            _logger.info("Wait for Evaluation...")
+            container.wait(timeout=kwargs["timeout"])
+            _logger.info("...Evaluated")
+
+            _logger.info("Recieve stdout...")
+            stdout = container.logs(stdout=True, stderr=False).decode("utf-8")
             _logger.debug(stdout)
-            _logger.info('...Recived')
+            _logger.info("...Recived")
 
-            if kwargs['rm']:
-                _logger.info('Remove container...')
-                c.remove()
-                _logger.info('...Removed')
+            if kwargs["rm"]:
+                _logger.info("Remove container...")
+                container.remove()
+                _logger.info("...Removed")
 
-            _logger.info('Parse stdout...')
+            _logger.info("Parse stdout...")
             stdout = json.loads(stdout)
             _logger.debug(stdout)
-            _logger.info('...Parsed')
+            _logger.info("...Parsed")
 
-            _logger.info('Check budget...')
-            check_budget(ctx, user_id=solution['owner_id'], match_id=solution['match_id'])
-            _logger.info('...OK')
+            _logger.info("Check budget...")
+            check_budget(
+                ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
+            )
+            _logger.info("...OK")
 
-            _logger.info('Push evaluation...')
-            query(ctx, q_finish_evaluation,
-                id=solution['id'],
-                objective=stdout.get('objective'),
-                constraint=stdout.get('constraint'),
-                info=stdout.get('info'),
-                error=stdout.get('error'))
-            _logger.info('...Pushed')
-        except Exception as e:
-            if type(e) is InterruptedError:
-                _logger.info(e)
-                _logger.info('Attempt graceful shutdown...')
-                _logger.info('Rollback evaluation...')
-                query(ctx, q_cancel_evaluation, id=solution['id'])
-                _logger.info('...Rolled back')
-                _logger.info('...Shutted down')
+            _logger.info("Push evaluation...")
+            query(
+                ctx,
+                Q_FINISH_EVALUATION,
+                id=solution["id"],
+                objective=stdout.get("objective"),
+                constraint=stdout.get("constraint"),
+                info=stdout.get("info"),
+                error=stdout.get("error"),
+            )
+            _logger.info("...Pushed")
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                _logger.info(exc)
+                _logger.info("Attempt graceful shutdown...")
+                _logger.info("Rollback evaluation...")
+                query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
+                _logger.info("...Rolled back")
+                _logger.info("...Shutted down")
                 ctx.exit(0)
             _logger.error(format_exc())
-            _logger.info('Finish evaluation...')
-            query(ctx, q_finish_evaluation,
-                id=solution['id'],
+            _logger.info("Finish evaluation...")
+            query(
+                ctx,
+                Q_FINISH_EVALUATION,
+                id=solution["id"],
                 objective=None,
                 constraint=None,
                 info=None,
-                error=str(e))
-            _logger.info('...Finished')
+                error=str(exc),
+            )
+            _logger.info("...Finished")
             continue
 
         n_solution += 1
-        _logger.info('==================== Solution: %d ====================', n_solution)
+        _logger.info(
+            "==================== Solution: %d ====================", n_solution
+        )

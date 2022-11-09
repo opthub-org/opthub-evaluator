@@ -13,8 +13,8 @@ def main():
     x = input()
     variable = json.loads(x)
     objective = sphere(variable)
-    print(json.dumps({'objective': objective, 'constraint': None}))
+    print(json.dumps({"objective": objective, "constraint": None}))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
