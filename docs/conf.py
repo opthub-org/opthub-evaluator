@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # -- Project information -----------------------------------------------------
 
 project = "Opthub Evaluator"
-copyright = "{} SIG-RBP".format(date.today().year)
+copyright = f"{date.today().year} SIG-RBP"
 author = "Naoki Hamada"
 
 # The full version, including alpha/beta/rc tags
@@ -108,9 +108,10 @@ def linkcode_resolve(domain, info):
     if domain != "py" or not info["module"]:
         return None
     try:
-        filename = "opthub_evaluator/%s#L%d-L%d" % find_source()
+        file, begin, end = find_source()
+        filename = f"opthub_evaluator/{file}#L{begin}-L{end}"
     except Exception as e:
         logger.warning(e)
         filename = info["module"].replace(".", "/") + ".py"
     tag = "master"  # if 'dev' in release else ('v' + release)
-    return "https://github.com/opthub-org/opthub-evaluator/blob/%s/%s" % (tag, filename)
+    return f"https://github.com/opthub-org/opthub-evaluator/blob/{tag}/{filename}"
