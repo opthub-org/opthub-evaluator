@@ -3,8 +3,9 @@ Definition of CLI commands.
 """
 import json
 import logging
+from collections import defaultdict
 from os import path
-from time import sleep
+from time import sleep, time
 from traceback import format_exc
 
 import click
@@ -14,7 +15,7 @@ from click.types import StringParamType
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-_logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class AliasedGroup(click.Group):
@@ -141,14 +142,16 @@ def query(ctx, gql_doc, **kwargs):
     For example, when gql_doc=Q_SOLUTION_TO_EVALUATE, response is about a single solution that
     has not been evaluated by objective functions.
     """
-    _logger.debug("query(%s, %s)", gql_doc, kwargs)
+    LOGGER.debug("query(%s, %s)", gql_doc, kwargs)
     try:
         response = ctx.obj["client"].execute(gql(gql_doc), variable_values=kwargs)
     except Exception as exc:
         ctx.fail("Exception %s raised when executing query %s\n" % (exc, gql_doc))
-    _logger.debug("-> %s", response)
+    LOGGER.debug("-> %s", response)
     return response
 
+
+cpu_usages = defaultdict(float)
 
 def wait_to_fetch(ctx, interval):
     """Check if an unevaluated solution exists in a database by calling query every "interval"
@@ -163,6 +166,9 @@ def wait_to_fetch(ctx, interval):
         if response["solutions"]:
             break  # solution found
         sleep(interval)
+    LOGGER.debug(cpu_usages)
+    response["solutions"].sort(key=lambda key: cpu_usages[(key["match_id"], key["owner_id"])])
+    LOGGER.debug(response["solutions"])
     return response["solutions"][0]["id"]
 
 
@@ -186,11 +192,13 @@ def check_budget(ctx, user_id, match_id):
 Q_SOLUTION_TO_EVALUATE = """
 query solution_to_evaluate {
   solutions(
-    limit: 1
-    order_by: { id: asc }
+    distinct_on: [ match_id, owner_id ]
+    order_by: [ { match_id: asc }, { owner_id: asc }, { id: asc }]
     where: { evaluation_started_at: { _is_null: true } }
   ) {
     id
+    match_id
+    owner_id
   }
 }
 """
@@ -363,8 +371,8 @@ def run(ctx, **kwargs):
     verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
     log_level = logging.WARNING + verbosity
     logging.basicConfig(level=log_level)
-    _logger.info("Log level is set to %d", log_level)
-    _logger.debug("run(%s)", kwargs)
+    LOGGER.info("Log level is set to %d", log_level)
+    LOGGER.debug("run(%s)", kwargs)
     transport = RequestsHTTPTransport(
         url=kwargs["url"],
         verify=kwargs["verify"],
@@ -378,56 +386,57 @@ def run(ctx, **kwargs):
         )
     }
 
-    _logger.info("Connect to docker daemon...")
+    LOGGER.info("Connect to docker daemon...")
     client = docker.from_env()
-    _logger.info("...Connected")
+    LOGGER.info("...Connected")
 
     n_solution = 1
-    _logger.info("==================== Solution: %d ====================", n_solution)
+    LOGGER.info("==================== Solution: %d ====================", n_solution)
     while True:
         try:
-            _logger.info("Find solution to evaluate...")
+            LOGGER.info("Find solution to evaluate...")
             solution_id = wait_to_fetch(ctx, kwargs["interval"])
-            _logger.debug(solution_id)
-            _logger.info("...Found")
+            LOGGER.debug(solution_id)
+            LOGGER.info("...Found")
         except Exception as exc:
             if isinstance(exc, InterruptedError):
-                _logger.info(exc)
-                _logger.info("Attempt graceful shutdown...")
-                _logger.info("No need to rollback")
-                _logger.info("...Shutted down")
+                LOGGER.info(exc)
+                LOGGER.info("Attempt graceful shutdown...")
+                LOGGER.info("No need to rollback")
+                LOGGER.info("...Shutted down")
                 ctx.exit(0)
             else:
-                _logger.error(format_exc())
+                LOGGER.error(format_exc())
                 continue
 
         try:
-            _logger.info("Try to lock solution to evaluate...")
+            LOGGER.info("Try to lock solution to evaluate...")
             response = query(ctx, Q_START_EVALUATION, id=solution_id)
             if response["update_solutions"]["affected_rows"] == 0:
-                _logger.info("...Already locked")
+                LOGGER.info("...Already locked")
                 continue
             if response["update_solutions"]["affected_rows"] != 1:
-                _logger.error(
+                LOGGER.error(
                     "Lock error: affected_rows must be 0 or 1, but %s", response
                 )
             solution = response["update_solutions"]["returning"][0]
-            _logger.info("...Lock aquired")
+            LOGGER.info("...Lock aquired")
+            start_time = time()
 
-            _logger.info("Check budget...")
+            LOGGER.info("Check budget...")
             check_budget(
                 ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
             )
-            _logger.info("...OK")
+            LOGGER.info("...OK")
 
-            _logger.info("Parse variable to evaluate...")
-            _logger.debug(solution["variable"])
+            LOGGER.info("Parse variable to evaluate...")
+            LOGGER.debug(solution["variable"])
             variable = json.dumps(solution["variable"]) + "\n"
-            _logger.debug(variable)
-            _logger.info("...Parsed")
+            LOGGER.debug(variable)
+            LOGGER.info("...Parsed")
 
-            _logger.info("Start container...")
-            _logger.debug(solution["match"]["problem"]["image"])
+            LOGGER.info("Start container...")
+            LOGGER.debug(solution["match"]["problem"]["image"])
             container = client.containers.run(
                 image=solution["match"]["problem"]["image"],
                 command=kwargs["command"],
@@ -437,43 +446,43 @@ def run(ctx, **kwargs):
                 stdin_open=True,
                 detach=True,
             )
-            _logger.info("...Started: %s", container.name)
+            LOGGER.info("...Started: %s", container.name)
 
-            _logger.info("Send variable...")
+            LOGGER.info("Send variable...")
             socket = container.attach_socket(
                 params={"stdin": 1, "stream": 1, "stdout": 1, "stderr": 1}
             )
             socket._sock.sendall(
                 variable.encode("utf-8")
             )  # pylint: disable=protected-access
-            _logger.info("...Send")
+            LOGGER.info("...Send")
 
-            _logger.info("Wait for Evaluation...")
+            LOGGER.info("Wait for Evaluation...")
             container.wait(timeout=kwargs["timeout"])
-            _logger.info("...Evaluated")
+            LOGGER.info("...Evaluated")
 
-            _logger.info("Recieve stdout...")
+            LOGGER.info("Recieve stdout...")
             stdout = container.logs(stdout=True, stderr=False).decode("utf-8")
-            _logger.debug(stdout)
-            _logger.info("...Recived")
+            LOGGER.debug(stdout)
+            LOGGER.info("...Recived")
 
             if kwargs["rm"]:
-                _logger.info("Remove container...")
+                LOGGER.info("Remove container...")
                 container.remove()
-                _logger.info("...Removed")
+                LOGGER.info("...Removed")
 
-            _logger.info("Parse stdout...")
+            LOGGER.info("Parse stdout...")
             stdout = json.loads(stdout)
-            _logger.debug(stdout)
-            _logger.info("...Parsed")
+            LOGGER.debug(stdout)
+            LOGGER.info("...Parsed")
 
-            _logger.info("Check budget...")
+            LOGGER.info("Check budget...")
             check_budget(
                 ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
             )
-            _logger.info("...OK")
+            LOGGER.info("...OK")
 
-            _logger.info("Push evaluation...")
+            LOGGER.info("Push evaluation...")
             query(
                 ctx,
                 Q_FINISH_EVALUATION,
@@ -483,18 +492,21 @@ def run(ctx, **kwargs):
                 info=stdout.get("info"),
                 error=stdout.get("error"),
             )
-            _logger.info("...Pushed")
+            LOGGER.info("...Pushed")
+            end_time = time()
+            cpu_usages[(solution["match_id"], solution["owner_id"])] += end_time - start_time
+
         except Exception as exc:
             if isinstance(exc, InterruptedError):
-                _logger.info(exc)
-                _logger.info("Attempt graceful shutdown...")
-                _logger.info("Rollback evaluation...")
+                LOGGER.info(exc)
+                LOGGER.info("Attempt graceful shutdown...")
+                LOGGER.info("Rollback evaluation...")
                 query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
-                _logger.info("...Rolled back")
-                _logger.info("...Shutted down")
+                LOGGER.info("...Rolled back")
+                LOGGER.info("...Shutted down")
                 ctx.exit(0)
-            _logger.error(format_exc())
-            _logger.info("Finish evaluation...")
+            LOGGER.error(format_exc())
+            LOGGER.info("Finish evaluation...")
             query(
                 ctx,
                 Q_FINISH_EVALUATION,
@@ -504,10 +516,10 @@ def run(ctx, **kwargs):
                 info=None,
                 error=str(exc),
             )
-            _logger.info("...Finished")
+            LOGGER.info("...Finished")
             continue
 
         n_solution += 1
-        _logger.info(
+        LOGGER.info(
             "==================== Solution: %d ====================", n_solution
         )
