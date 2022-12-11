@@ -5,6 +5,7 @@ import json
 import logging
 from collections import defaultdict
 from os import path
+from subprocess import check_output
 from time import sleep, time
 from traceback import format_exc
 
@@ -300,7 +301,6 @@ mutation cancel_evaluation(
 }
 """
 
-
 @click.command(help="OptHub Evaluator.")
 @click.option(
     "-u",
@@ -346,6 +346,14 @@ mutation cancel_evaluation(
 @click.option(
     "--rm", envvar="OPTHUB_REMOVE", is_flag=True, help="Remove containers after exit."
 )
+@click.option(
+    "-b",
+    "--backend",
+    envvar="OPTHUB_BACKEND",
+    type=click.Choice(["docker", "singularity"]),
+    default="docker",
+    help="Container backend.",
+)
 @click.option("-q", "--quiet", count=True, help="Be quieter.")
 @click.option("-v", "--verbose", count=True, help="Be more verbose.")
 @click.option(
@@ -367,7 +375,15 @@ def run(ctx, **kwargs):
     :param ctx: Click context
     :param kwargs: GraphQL variables
     """
+    if kwargs["backend"] == "docker":
+        run_docker(ctx, **kwargs)
+    elif kwargs["backend"] == "singularity":
+        run_singularity(ctx, **kwargs)
+    else:
+        raise ValueError(f'Illeagal backend: {kwargs["backend"]}')
 
+
+def run_docker(ctx, **kwargs):
     verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
     log_level = logging.WARNING + verbosity
     logging.basicConfig(level=log_level)
@@ -470,6 +486,143 @@ def run(ctx, **kwargs):
                 LOGGER.info("Remove container...")
                 container.remove()
                 LOGGER.info("...Removed")
+
+            LOGGER.info("Parse stdout...")
+            stdout = json.loads(stdout)
+            LOGGER.debug(stdout)
+            LOGGER.info("...Parsed")
+
+            LOGGER.info("Check budget...")
+            check_budget(
+                ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
+            )
+            LOGGER.info("...OK")
+
+            LOGGER.info("Push evaluation...")
+            query(
+                ctx,
+                Q_FINISH_EVALUATION,
+                id=solution["id"],
+                objective=stdout.get("objective"),
+                constraint=stdout.get("constraint"),
+                info=stdout.get("info"),
+                error=stdout.get("error"),
+            )
+            LOGGER.info("...Pushed")
+            end_time = time()
+            cpu_usages[(solution["match_id"], solution["owner_id"])] += end_time - start_time
+
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                LOGGER.info(exc)
+                LOGGER.info("Attempt graceful shutdown...")
+                LOGGER.info("Rollback evaluation...")
+                query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
+                LOGGER.info("...Rolled back")
+                LOGGER.info("...Shutted down")
+                ctx.exit(0)
+            LOGGER.error(format_exc())
+            LOGGER.info("Finish evaluation...")
+            query(
+                ctx,
+                Q_FINISH_EVALUATION,
+                id=solution["id"],
+                objective=None,
+                constraint=None,
+                info=None,
+                error=str(exc),
+            )
+            LOGGER.info("...Finished")
+            continue
+
+        n_solution += 1
+        LOGGER.info(
+            "==================== Solution: %d ====================", n_solution
+        )
+
+
+def run_singularity(ctx, **kwargs):
+    verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
+    log_level = logging.WARNING + verbosity
+    logging.basicConfig(level=log_level)
+    LOGGER.info("Log level is set to %d", log_level)
+    LOGGER.debug("run(%s)", kwargs)
+    transport = RequestsHTTPTransport(
+        url=kwargs["url"],
+        verify=kwargs["verify"],
+        retries=kwargs["retries"],
+        headers={"X-Hasura-Admin-Secret": kwargs["apikey"]},
+    )
+    ctx.obj = {
+        "client": Client(
+            transport=transport,
+            fetch_schema_from_transport=True,
+        )
+    }
+
+    n_solution = 1
+    LOGGER.info("==================== Solution: %d ====================", n_solution)
+    while True:
+        try:
+            LOGGER.info("Find solution to evaluate...")
+            solution_id = wait_to_fetch(ctx, kwargs["interval"])
+            LOGGER.debug(solution_id)
+            LOGGER.info("...Found")
+        except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                LOGGER.info(exc)
+                LOGGER.info("Attempt graceful shutdown...")
+                LOGGER.info("No need to rollback")
+                LOGGER.info("...Shutted down")
+                ctx.exit(0)
+            else:
+                LOGGER.error(format_exc())
+                continue
+
+        try:
+            LOGGER.info("Try to lock solution to evaluate...")
+            response = query(ctx, Q_START_EVALUATION, id=solution_id)
+            if response["update_solutions"]["affected_rows"] == 0:
+                LOGGER.info("...Already locked")
+                continue
+            if response["update_solutions"]["affected_rows"] != 1:
+                LOGGER.error(
+                    "Lock error: affected_rows must be 0 or 1, but %s", response
+                )
+            solution = response["update_solutions"]["returning"][0]
+            LOGGER.info("...Lock aquired")
+            start_time = time()
+
+            LOGGER.info("Check budget...")
+            check_budget(
+                ctx, user_id=solution["owner_id"], match_id=solution["match_id"]
+            )
+            LOGGER.info("...OK")
+
+            LOGGER.info("Parse variable to evaluate...")
+            LOGGER.debug(solution["variable"])
+            variable = json.dumps(solution["variable"]) + "\n"
+            LOGGER.debug(variable)
+            LOGGER.info("...Parsed")
+
+            LOGGER.info("Start container...")
+            LOGGER.debug(solution["match"]["problem"]["image"])
+            stdout = check_output(
+                [
+                    "singularity",
+                    "run",
+                    "--writable",
+                    "--env",
+                    ",".join(f'{v["key"]}={v["value"]}' for v in solution["match"]["environments"]),
+                    solution["match"]["problem"]["image"],
+                    kwargs["command"],
+                ],
+                input=variable,
+                text=True,
+                timeout=kwargs["timeout"],
+            )
+            LOGGER.debug(stdout)
+            LOGGER.info("...Recived")
 
             LOGGER.info("Parse stdout...")
             stdout = json.loads(stdout)
