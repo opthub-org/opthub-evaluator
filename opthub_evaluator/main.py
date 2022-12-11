@@ -608,15 +608,14 @@ def run_singularity(ctx, **kwargs):
             LOGGER.info("Start container...")
             LOGGER.debug(solution["match"]["problem"]["image"])
             LOGGER.info("Evaluate...")
-            cmd = [
+            cmd = (
                 "singularity",
                 "run",
                 "--writable",
                 "--env",
                 ",".join(f'{v["key"]}={v["value"]}' for v in solution["match"]["environments"]),
                 solution["match"]["problem"]["image"],
-                kwargs["command"],
-            ]
+            ) + kwargs["command"]
             LOGGER.debug(cmd)
             stdout = check_output(
                 cmd,
