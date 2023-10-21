@@ -154,6 +154,7 @@ def query(ctx, gql_doc, **kwargs):
 
 cpu_usages = defaultdict(float)
 
+
 def wait_to_fetch(ctx, interval):
     """Check if an unevaluated solution exists in a database by calling query every "interval"
     seconds.
@@ -168,7 +169,9 @@ def wait_to_fetch(ctx, interval):
             break  # solution found
         sleep(interval)
     LOGGER.debug(cpu_usages)
-    response["solutions"].sort(key=lambda key: cpu_usages[(key["match_id"], key["owner_id"])])
+    response["solutions"].sort(
+        key=lambda key: cpu_usages[(key["match_id"], key["owner_id"])]
+    )
     LOGGER.debug(response["solutions"])
     return response["solutions"][0]["id"]
 
@@ -300,6 +303,7 @@ mutation cancel_evaluation(
   }
 }
 """
+
 
 @click.command(help="OptHub Evaluator.")
 @click.option(
@@ -488,8 +492,9 @@ def run_docker(ctx, **kwargs):
                 LOGGER.info("...Removed")
 
             LOGGER.info("Parse stdout...")
-            stdout = json.loads(stdout)
-            LOGGER.debug(stdout)
+            lastline = stdout.split("\n")[-1]
+            out = json.loads(lastline)
+            LOGGER.debug(out)
             LOGGER.info("...Parsed")
 
             LOGGER.info("Check budget...")
@@ -503,14 +508,16 @@ def run_docker(ctx, **kwargs):
                 ctx,
                 Q_FINISH_EVALUATION,
                 id=solution["id"],
-                objective=stdout.get("objective"),
-                constraint=stdout.get("constraint"),
-                info=stdout.get("info"),
-                error=stdout.get("error"),
+                objective=out.get("objective"),
+                constraint=out.get("constraint"),
+                info=out.get("info"),
+                error=out.get("error"),
             )
             LOGGER.info("...Pushed")
             end_time = time()
-            cpu_usages[(solution["match_id"], solution["owner_id"])] += end_time - start_time
+            cpu_usages[(solution["match_id"], solution["owner_id"])] += (
+                end_time - start_time
+            )
 
         except Exception as exc:
             if isinstance(exc, InterruptedError):
@@ -613,7 +620,10 @@ def run_singularity(ctx, **kwargs):
                 "run",
                 "--writable",
                 "--env",
-                ",".join(f'{v["key"]}={v["value"]}' for v in solution["match"]["environments"]),
+                ",".join(
+                    f'{v["key"]}={v["value"]}'
+                    for v in solution["match"]["environments"]
+                ),
                 solution["match"]["problem"]["image"],
             ) + kwargs["command"]
             LOGGER.debug(cmd)
@@ -627,8 +637,9 @@ def run_singularity(ctx, **kwargs):
             LOGGER.info("...Evaluated")
 
             LOGGER.info("Parse stdout...")
-            stdout = json.loads(stdout)
-            LOGGER.debug(stdout)
+            lastline = stdout.split("\n")[-1]
+            out = json.loads(lastline)
+            LOGGER.debug(out)
             LOGGER.info("...Parsed")
 
             LOGGER.info("Check budget...")
@@ -642,14 +653,16 @@ def run_singularity(ctx, **kwargs):
                 ctx,
                 Q_FINISH_EVALUATION,
                 id=solution["id"],
-                objective=stdout.get("objective"),
-                constraint=stdout.get("constraint"),
-                info=stdout.get("info"),
-                error=stdout.get("error"),
+                objective=out.get("objective"),
+                constraint=out.get("constraint"),
+                info=out.get("info"),
+                error=out.get("error"),
             )
             LOGGER.info("...Pushed")
             end_time = time()
-            cpu_usages[(solution["match_id"], solution["owner_id"])] += end_time - start_time
+            cpu_usages[(solution["match_id"], solution["owner_id"])] += (
+                end_time - start_time
+            )
 
         except Exception as exc:
             if isinstance(exc, InterruptedError):
