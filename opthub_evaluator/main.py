@@ -387,6 +387,12 @@ def run(ctx, **kwargs):
         raise ValueError(f'Illeagal backend: {kwargs["backend"]}')
 
 
+def parse_stdout(stdout: str):
+    for line in stdout.split("\n").reverse():
+        if line:
+            return json.loads(line)
+
+
 def run_docker(ctx, **kwargs):
     verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
     log_level = logging.WARNING + verbosity
@@ -492,8 +498,7 @@ def run_docker(ctx, **kwargs):
                 LOGGER.info("...Removed")
 
             LOGGER.info("Parse stdout...")
-            lastline = stdout.split("\n")[-1]
-            out = json.loads(lastline)
+            out = parse_stdout(stdout)
             LOGGER.debug(out)
             LOGGER.info("...Parsed")
 
@@ -637,8 +642,7 @@ def run_singularity(ctx, **kwargs):
             LOGGER.info("...Evaluated")
 
             LOGGER.info("Parse stdout...")
-            lastline = stdout.split("\n")[-1]
-            out = json.loads(lastline)
+            out = parse_stdout(stdout)
             LOGGER.debug(out)
             LOGGER.info("...Parsed")
 
