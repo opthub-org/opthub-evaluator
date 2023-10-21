@@ -388,7 +388,9 @@ def run(ctx, **kwargs):
 
 
 def parse_stdout(stdout: str):
-    for line in stdout.split("\n").reverse():
+    lines = stdout.split("\n")
+    lines.reverse()
+    for line in lines:
         if line:
             return json.loads(line)
 
