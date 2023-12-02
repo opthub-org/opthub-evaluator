@@ -3,9 +3,11 @@ Definition of CLI commands.
 """
 import json
 import logging
+import math
 from collections import defaultdict
 from os import path
 from subprocess import check_output
+import sys
 from time import sleep, time
 from traceback import format_exc
 
@@ -100,6 +102,25 @@ class StrLength(StringParamType):
 
     def __repr__(self):
         return "StrLength(%d, %d)" % (self.min, self.max)
+
+
+def to_json_float(value: float) -> float:
+    """Convert a float value to a JSON float value.
+
+    :param value: float value
+    :return float: JSON float value
+    """
+    if isinstance(value, list):
+        return [to_json_float(v) for v in value]
+    if isinstance(value, dict):
+        return {k: to_json_float(v) for k, v in value.items()}
+    if value == math.inf:
+        return sys.float_info.max
+    if value == -math.inf:
+        return -sys.float_info.max
+    if math.isnan(value):
+        return None
+    return value
 
 
 def load_config(ctx, self, value):  # pylint:disable=unused-argument
@@ -515,8 +536,8 @@ def run_docker(ctx, **kwargs):
                 ctx,
                 Q_FINISH_EVALUATION,
                 id=solution["id"],
-                objective=out.get("objective"),
-                constraint=out.get("constraint"),
+                objective=to_json_float(out.get("objective")),
+                constraint=to_json_float(out.get("constraint")),
                 info=out.get("info"),
                 error=out.get("error"),
             )
