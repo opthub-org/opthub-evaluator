@@ -104,7 +104,7 @@ class StrLength(StringParamType):
         return "StrLength(%d, %d)" % (self.min, self.max)
 
 
-def to_json_float(value: float) -> float:
+def to_json_float(value):
     """Convert a float value to a JSON float value.
 
     :param value: float value
@@ -114,6 +114,8 @@ def to_json_float(value: float) -> float:
         return [to_json_float(v) for v in value]
     if isinstance(value, dict):
         return {k: to_json_float(v) for k, v in value.items()}
+    if not isinstance(value, float):
+        return value
     if value == math.inf:
         return sys.float_info.max
     if value == -math.inf:
