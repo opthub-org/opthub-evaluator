@@ -4,6 +4,7 @@ Definition of CLI commands.
 import json
 import logging
 import math
+import signal
 import sys
 from collections import defaultdict
 from os import path
@@ -335,6 +336,13 @@ mutation cancel_evaluation(
 """
 
 
+def signal_handler(signum, frame):
+    raise KeyboardInterrupt
+
+
+signal.signal(signal.SIGTERM, signal_handler)
+
+
 @click.command(help="OptHub Evaluator.")
 @click.option(
     "-u",
@@ -457,10 +465,14 @@ def run_docker(ctx, **kwargs):
             LOGGER.debug(solution_id)
             LOGGER.info("...Found")
         except KeyboardInterrupt:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             LOGGER.warning(format_exc())
             LOGGER.warning("Attempt graceful shutdown...")
             LOGGER.warning("No need to rollback")
             LOGGER.warning("...Shutted down")
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
             ctx.exit(0)
         except Exception:
             LOGGER.error(format_exc())
@@ -556,12 +568,16 @@ def run_docker(ctx, **kwargs):
             )
 
         except KeyboardInterrupt:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             LOGGER.warning(format_exc())
             LOGGER.warning("Attempt graceful shutdown...")
             LOGGER.warning("Rollback evaluation...")
             query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
             LOGGER.warning("...Rolled back")
             LOGGER.warning("...Shutted down")
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
             ctx.exit(0)
         except Exception as exc:
             LOGGER.error(format_exc())
@@ -612,10 +628,14 @@ def run_singularity(ctx, **kwargs):
             LOGGER.debug(solution_id)
             LOGGER.info("...Found")
         except KeyboardInterrupt:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             LOGGER.warning(format_exc())
             LOGGER.warning("Attempt graceful shutdown...")
             LOGGER.warning("No need to rollback")
             LOGGER.warning("...Shutted down")
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
             ctx.exit(0)
         except Exception:
             LOGGER.error(format_exc())
@@ -699,12 +719,16 @@ def run_singularity(ctx, **kwargs):
             )
 
         except KeyboardInterrupt:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             LOGGER.warning(format_exc())
             LOGGER.warning("Attempt graceful shutdown...")
             LOGGER.warning("Rollback evaluation...")
             query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
             LOGGER.warning("...Rolled back")
             LOGGER.warning("...Shutted down")
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
             ctx.exit(0)
         except Exception as exc:
             LOGGER.error(format_exc())
