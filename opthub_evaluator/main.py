@@ -117,10 +117,13 @@ def to_json_float(value):
     if not isinstance(value, float):
         return value
     if value == math.inf:
+        LOGGER.warning("math.inf is converted to sys.float_info.max")
         return sys.float_info.max
     if value == -math.inf:
+        LOGGER.warning("-math.inf is converted to -sys.float_info.max")
         return -sys.float_info.max
     if math.isnan(value):
+        LOGGER.warning("math.nan is converted to None")
         return None
     return value
 
