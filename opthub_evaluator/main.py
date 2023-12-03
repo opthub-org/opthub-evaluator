@@ -682,8 +682,8 @@ def run_singularity(ctx, **kwargs):
                 ctx,
                 Q_FINISH_EVALUATION,
                 id=solution["id"],
-                objective=out.get("objective"),
-                constraint=out.get("constraint"),
+                objective=to_json_float(out.get("objective")),
+                constraint=to_json_float(out.get("constraint")),
                 info=out.get("info"),
                 error=out.get("error"),
             )
