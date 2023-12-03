@@ -4,12 +4,13 @@ Definition of CLI commands.
 import json
 import logging
 import math
+import sys
 from collections import defaultdict
 from os import path
 from subprocess import check_output
-import sys
 from time import sleep, time
 from traceback import format_exc
+from typing import DefaultDict, Tuple
 
 import click
 import docker
@@ -178,7 +179,8 @@ def query(ctx, gql_doc, **kwargs):
     return response
 
 
-cpu_usages = defaultdict(float)
+cpu_usages: DefaultDict[Tuple[int, str], float] = defaultdict(float)
+"""(match_id, owner_id) -> cpu_usage"""
 
 
 def wait_to_fetch(ctx, interval):
@@ -195,6 +197,8 @@ def wait_to_fetch(ctx, interval):
             break  # solution found
         sleep(interval)
     LOGGER.debug(cpu_usages)
+
+    # least cpu_usage first
     response["solutions"].sort(
         key=lambda key: cpu_usages[(key["match_id"], key["owner_id"])]
     )
