@@ -462,7 +462,7 @@ def run_docker(ctx, **kwargs):
             LOGGER.warning("No need to rollback")
             LOGGER.warning("...Shutted down")
             ctx.exit(0)
-        except Exception as exc:
+        except Exception:
             LOGGER.error(format_exc())
             continue
 
