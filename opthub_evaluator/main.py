@@ -456,16 +456,15 @@ def run_docker(ctx, **kwargs):
             solution_id = wait_to_fetch(ctx, kwargs["interval"])
             LOGGER.debug(solution_id)
             LOGGER.info("...Found")
+        except KeyboardInterrupt:
+            LOGGER.warning(format_exc())
+            LOGGER.warning("Attempt graceful shutdown...")
+            LOGGER.warning("No need to rollback")
+            LOGGER.warning("...Shutted down")
+            ctx.exit(0)
         except Exception as exc:
-            if isinstance(exc, InterruptedError):
-                LOGGER.info(exc)
-                LOGGER.info("Attempt graceful shutdown...")
-                LOGGER.info("No need to rollback")
-                LOGGER.info("...Shutted down")
-                ctx.exit(0)
-            else:
-                LOGGER.error(format_exc())
-                continue
+            LOGGER.error(format_exc())
+            continue
 
         try:
             LOGGER.info("Try to lock solution to evaluate...")
@@ -556,15 +555,15 @@ def run_docker(ctx, **kwargs):
                 end_time - start_time
             )
 
+        except KeyboardInterrupt:
+            LOGGER.warning(format_exc())
+            LOGGER.warning("Attempt graceful shutdown...")
+            LOGGER.warning("Rollback evaluation...")
+            query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
+            LOGGER.warning("...Rolled back")
+            LOGGER.warning("...Shutted down")
+            ctx.exit(0)
         except Exception as exc:
-            if isinstance(exc, InterruptedError):
-                LOGGER.info(exc)
-                LOGGER.info("Attempt graceful shutdown...")
-                LOGGER.info("Rollback evaluation...")
-                query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
-                LOGGER.info("...Rolled back")
-                LOGGER.info("...Shutted down")
-                ctx.exit(0)
             LOGGER.error(format_exc())
             LOGGER.info("Finish evaluation...")
             query(
@@ -612,16 +611,15 @@ def run_singularity(ctx, **kwargs):
             solution_id = wait_to_fetch(ctx, kwargs["interval"])
             LOGGER.debug(solution_id)
             LOGGER.info("...Found")
-        except Exception as exc:
-            if isinstance(exc, InterruptedError):
-                LOGGER.info(exc)
-                LOGGER.info("Attempt graceful shutdown...")
-                LOGGER.info("No need to rollback")
-                LOGGER.info("...Shutted down")
-                ctx.exit(0)
-            else:
-                LOGGER.error(format_exc())
-                continue
+        except KeyboardInterrupt:
+            LOGGER.warning(format_exc())
+            LOGGER.warning("Attempt graceful shutdown...")
+            LOGGER.warning("No need to rollback")
+            LOGGER.warning("...Shutted down")
+            ctx.exit(0)
+        except Exception:
+            LOGGER.error(format_exc())
+            continue
 
         try:
             LOGGER.info("Try to lock solution to evaluate...")
@@ -700,15 +698,15 @@ def run_singularity(ctx, **kwargs):
                 end_time - start_time
             )
 
+        except KeyboardInterrupt:
+            LOGGER.warning(format_exc())
+            LOGGER.warning("Attempt graceful shutdown...")
+            LOGGER.warning("Rollback evaluation...")
+            query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
+            LOGGER.warning("...Rolled back")
+            LOGGER.warning("...Shutted down")
+            ctx.exit(0)
         except Exception as exc:
-            if isinstance(exc, InterruptedError):
-                LOGGER.info(exc)
-                LOGGER.info("Attempt graceful shutdown...")
-                LOGGER.info("Rollback evaluation...")
-                query(ctx, Q_CANCEL_EVALUATION, id=solution["id"])
-                LOGGER.info("...Rolled back")
-                LOGGER.info("...Shutted down")
-                ctx.exit(0)
             LOGGER.error(format_exc())
             LOGGER.info("Finish evaluation...")
             query(
