@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>opthub_evaluator package &mdash; Opthub Evaluator 0.8.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=ec16d22d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="opthub_evaluator" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Opthub Evaluator
+          </a>
+              <div class="version">
+                0.8.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">opthub_evaluator</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">opthub_evaluator package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-opthub_evaluator.main">opthub_evaluator.main module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.AliasedGroup"><code class="docutils literal notranslate"><span class="pre">AliasedGroup</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.StrLength"><code class="docutils literal notranslate"><span class="pre">StrLength</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.check_budget"><code class="docutils literal notranslate"><span class="pre">check_budget()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.cpu_usages"><code class="docutils literal notranslate"><span class="pre">cpu_usages</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.load_config"><code class="docutils literal notranslate"><span class="pre">load_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.parse_stdout"><code class="docutils literal notranslate"><span class="pre">parse_stdout()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.query"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.run_docker"><code class="docutils literal notranslate"><span class="pre">run_docker()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.run_singularity"><code class="docutils literal notranslate"><span class="pre">run_singularity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.save_config"><code class="docutils literal notranslate"><span class="pre">save_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.signal_handler"><code class="docutils literal notranslate"><span class="pre">signal_handler()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.to_json_float"><code class="docutils literal notranslate"><span class="pre">to_json_float()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opthub_evaluator.main.wait_to_fetch"><code class="docutils literal notranslate"><span class="pre">wait_to_fetch()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-opthub_evaluator">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-run-a-competition">How to run a competition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#authorization-model">Authorization model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Opthub Evaluator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">opthub_evaluator</a></li>
+      <li class="breadcrumb-item active">opthub_evaluator package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/opthub_evaluator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="opthub-evaluator-package">
+<h1>opthub_evaluator package<a class="headerlink" href="#opthub-evaluator-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-opthub_evaluator.main">
+<span id="opthub-evaluator-main-module"></span><h2>opthub_evaluator.main module<a class="headerlink" href="#module-opthub_evaluator.main" title="Link to this heading"></a></h2>
+<p>Definition of CLI commands.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="opthub_evaluator.main.AliasedGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">AliasedGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.MutableMapping" title="(in Python v3.12)"><span class="pre">MutableMapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Command</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Command</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">attrs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L26-L47"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.AliasedGroup" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></p>
+<p>A Click group with short subcommands.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@click</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="n">AliasedGroup</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">long_name_command</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="opthub_evaluator.main.AliasedGroup.get_command">
+<span class="sig-name descname"><span class="pre">get_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L36-L47"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.AliasedGroup.get_command" title="Link to this definition"></a></dt>
+<dd><p>Given a context and a command name, this returns a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Command</span></code> object if it exists or returns <cite>None</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="opthub_evaluator.main.StrLength">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">StrLength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L50-L106"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.StrLength" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StringParamType</span></code></p>
+<p>A Click option type of string with length validation.</p>
+<p>This is basically the same as <cite>str</cite>, except for additional
+functionalities of length validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min</strong> – Minimum length</p></li>
+<li><p><strong>max</strong> – Maximum length</p></li>
+<li><p><strong>clamp</strong> – Clamp the input if exeeded</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="opthub_evaluator.main.StrLength.convert">
+<span class="sig-name descname"><span class="pre">convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L68-L103"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.StrLength.convert" title="Link to this definition"></a></dt>
+<dd><p>Convert the value to the correct type. This is not called if
+the value is <code class="docutils literal notranslate"><span class="pre">None</span></code> (the missing value).</p>
+<p>This must accept string values from the command line, as well as
+values that are already the correct type. It may also convert
+other compatible types.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">param</span></code> and <code class="docutils literal notranslate"><span class="pre">ctx</span></code> arguments may be <code class="docutils literal notranslate"><span class="pre">None</span></code> in certain
+situations, such as when converting prompt input.</p>
+<p>If the value cannot be converted, call <code class="xref py py-meth docutils literal notranslate"><span class="pre">fail()</span></code> with a
+descriptive message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – The value to convert.</p></li>
+<li><p><strong>param</strong> – The parameter that is using this type to convert
+its value. May be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>ctx</strong> – The current context that arrived at this value. May
+be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.check_budget">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">check_budget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_id</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L210-L224"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.check_budget" title="Link to this definition"></a></dt>
+<dd><p>Check if the budget is exceeded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – Click context.</p></li>
+<li><p><strong>user_id</strong> – User ID submitting solutions.</p></li>
+<li><p><strong>match_id</strong> – Match ID to submit solutions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.12)"><strong>Exception</strong></a> – When budget exceeded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="opthub_evaluator.main.cpu_usages">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">cpu_usages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.DefaultDict" title="(in Python v3.12)"><span class="pre">DefaultDict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.12)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.cpu_usages" title="Link to this definition"></a></dt>
+<dd><p>(match_id, owner_id) -&gt; cpu_usage</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.load_config">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L133-L146"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.load_config" title="Link to this definition"></a></dt>
+<dd><p>Load <cite>ctx.default_map</cite> from a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – Click context</p></li>
+<li><p><strong>self</strong> – Self object</p></li>
+<li><p><strong>value</strong> – File name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return dict<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.parse_stdout">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">parse_stdout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stdout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L428-L433"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.parse_stdout" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.query">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gql_doc</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L162-L180"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.query" title="Link to this definition"></a></dt>
+<dd><p>Submit a GraphQL query to a database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – Click context</p></li>
+<li><p><strong>gql_doc</strong> – str: GraphQL query submitted to a database.</p></li>
+</ul>
+</dd>
+</dl>
+<p>gql_doc takes either of Q_SOLUTION_TO_EVALUATE, Q_START_EVALUATION, Q_CHECK_BUDGET,
+Q_FINISH_EVALUATION, Q_CANCEL_EVALUATION.
+:param kwargs: GraphQL variables
+:return response: Results returned from a query (gql_doc). response depends on gql_doc.
+For example, when gql_doc=Q_SOLUTION_TO_EVALUATE, response is about a single solution that
+has not been evaluated by objective functions.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.run_docker">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">run_docker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L436-L603"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.run_docker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.run_singularity">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">run_singularity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L606-L754"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.run_singularity" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.save_config">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L149-L159"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.save_config" title="Link to this definition"></a></dt>
+<dd><p>Save <cite>ctx.default_map</cite> to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – Click context</p></li>
+<li><p><strong>value</strong> – File name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return dict<span class="colon">:</span></dt>
+<dd class="field-even"><p>Saveed config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.signal_handler">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">signal_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L339-L340"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.signal_handler" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.to_json_float">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">to_json_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L109-L130"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.to_json_float" title="Link to this definition"></a></dt>
+<dd><p>Convert a float value to a JSON float value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> – float value</p>
+</dd>
+<dt class="field-even">Return float<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON float value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="opthub_evaluator.main.wait_to_fetch">
+<span class="sig-prename descclassname"><span class="pre">opthub_evaluator.main.</span></span><span class="sig-name descname"><span class="pre">wait_to_fetch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/opthub-org/opthub-evaluator/blob/master/opthub_evaluator/main.py#L187-L207"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#opthub_evaluator.main.wait_to_fetch" title="Link to this definition"></a></dt>
+<dd><p>Check if an unevaluated solution exists in a database by calling query every “interval”
+seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – Click context</p></li>
+<li><p><strong>interval</strong> – int: Interval to access a database (second)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return solution_id<span class="colon">:</span></dt>
+<dd class="field-even"><p>ID of a solution that has not been evaluated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-opthub_evaluator">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-opthub_evaluator" title="Link to this heading"></a></h2>
+<p>OptHub API</p>
+<p>OptHub is a “collaborative optimization” website that provides a platform
+for socially hosting, analyzing, and solving black-box optimization
+problems. On this site, a user host a competition in which other users join
+to solve problems provided by the host user.
+This API provides basic CRUD operations (create, read, update, delete) to
+run competitions.</p>
+<section id="how-to-run-a-competition">
+<h3>How to run a competition<a class="headerlink" href="#how-to-run-a-competition" title="Link to this heading"></a></h3>
+<p>Organizers:
+1. Create a user.
+2. Create problems.
+3. Create indicators.
+4. Create a competition.
+5. Create matches.</p>
+<p>Participants:
+1. Create a user.
+2. Create a player.
+3. Create a trial.
+4. Create solutions.</p>
+</section>
+<section id="authorization-model">
+<h3>Authorization model<a class="headerlink" href="#authorization-model" title="Link to this heading"></a></h3>
+<p>Roles:
+- guest: Everyone without account.
+- user: Everyone with account.
+- owner: The user who created an object to access.
+- admin: System administrators.</p>
+<p>Permission:
+| Object      | guest | user  | owner | admin |
+<a href="#id1"><span class="problematic" id="id2">|-------------|</span></a>——-<a href="#id3"><span class="problematic" id="id4">|-------|</span></a>——-<a href="#id5"><span class="problematic" id="id6">|-------|</span></a>
+| User        | CR    | CR    | CRU   | CRUD  |
+| Problem     |  R    | CR    | CRU   | CRUD  |
+| Indicator   |  R    | CR    | CRU   | CRUD  |
+| Competition |  R    | CR    | CRU   | CRUD  |
+| Match       |  R    | CR    | CRU   | CRUD  |
+| Solution    |  r    | cr    | cR    | CRUD  |</p>
+<ul class="simple">
+<li><p>C: Create an object anytime.</p></li>
+<li><p>R: Read an object anytime.</p></li>
+<li><p>U: Update an object anytime.</p></li>
+<li><p>D: Delete an object anytime.</p></li>
+<li><p>c: Create an object in the competition period.</p></li>
+<li><p>r: Read an object after the competition period.</p></li>
+</ul>
+<p>Contact: <a class="reference external" href="mailto:hmkz&#37;&#52;&#48;s101&#46;xrea&#46;com">hmkz<span>&#64;</span>s101<span>&#46;</span>xrea<span>&#46;</span>com</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="opthub_evaluator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023 SIG-RBP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
