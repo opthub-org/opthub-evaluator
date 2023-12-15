@@ -436,7 +436,10 @@ def parse_stdout(stdout: str):
 def run_docker(ctx, **kwargs):
     verbosity = 10 * (kwargs["quiet"] - kwargs["verbose"])
     log_level = logging.WARNING + verbosity
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s",
+    )
     LOGGER.info("Log level is set to %d", log_level)
     LOGGER.debug("run(%s)", kwargs)
     transport = RequestsHTTPTransport(
